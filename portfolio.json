@@ -1,0 +1,53 @@
+{
+    "cash": 1000.0,
+    "margin_requirement": 0.0,
+    "margin_used": 0.0,
+    "positions": {
+        "AAPL": {
+            "long": 0,
+            "short": 0,
+            "long_cost_basis": 0.0,
+            "short_cost_basis": 0.0,
+            "short_margin_used": 0.0
+        },
+        "MSFT": {
+            "long": 0,
+            "short": 0,
+            "long_cost_basis": 0.0,
+            "short_cost_basis": 0.0,
+            "short_margin_used": 0.0
+        },
+        "NVDA": {
+            "long": 0,
+            "short": 0,
+            "long_cost_basis": 0.0,
+            "short_cost_basis": 0.0,
+            "short_margin_used": 0.0
+        },
+        "TSLA": {
+            "long": 0,
+            "short": 0,
+            "long_cost_basis": 0.0,
+            "short_cost_basis": 0.0,
+            "short_margin_used": 0.0
+        }
+    },
+    "realized_gains": {
+        "AAPL": {
+            "long": 0.0,
+            "short": 0.0
+        },
+        "MSFT": {
+            "long": 0.0,
+            "short": 0.0
+        },
+        "NVDA": {
+            "long": 0.0,
+            "short": 0.0
+        },
+        "TSLA": {
+            "long": 0.0,
+            "short": 0.0
+        }
+    }
+}

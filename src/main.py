@@ -19,6 +19,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from src.utils.visualize import save_graph_as_png
 import json
+import os
 
 # Load environment variables from .env file
 load_dotenv()
@@ -39,6 +40,55 @@ def parse_hedge_fund_response(response):
     except Exception as e:
         print(f"Unexpected error while parsing response: {e}\nResponse: {repr(response)}")
         return None
+
+
+# Portfolio persistence helpers
+PORTFOLIO_FILE = "portfolio.json"
+
+
+def load_portfolio(tickers, initial_cash=100000.0, margin_requirement=0.0):
+    """Load an existing portfolio or create a new one for the given tickers."""
+    if os.path.exists(PORTFOLIO_FILE):
+        with open(PORTFOLIO_FILE, "r") as f:
+            portfolio = json.load(f)
+
+        # Ensure all requested tickers exist in the portfolio structure
+        for ticker in tickers:
+            if ticker not in portfolio["positions"]:
+                portfolio["positions"][ticker] = {
+                    "long": 0,
+                    "short": 0,
+                    "long_cost_basis": 0.0,
+                    "short_cost_basis": 0.0,
+                    "short_margin_used": 0.0,
+                }
+                portfolio["realized_gains"][ticker] = {"long": 0.0, "short": 0.0}
+        return portfolio
+
+    return {
+        "cash": initial_cash,
+        "margin_requirement": margin_requirement,
+        "margin_used": 0.0,
+        "positions": {
+            ticker: {
+                "long": 0,
+                "short": 0,
+                "long_cost_basis": 0.0,
+                "short_cost_basis": 0.0,
+                "short_margin_used": 0.0,
+            }
+            for ticker in tickers
+        },
+        "realized_gains": {
+            ticker: {"long": 0.0, "short": 0.0} for ticker in tickers
+        },
+    }
+
+
+def save_portfolio(portfolio):
+    """Persist the portfolio to disk."""
+    with open(PORTFOLIO_FILE, "w") as f:
+        json.dump(portfolio, f, indent=4)
 
 
 ##### Run the Hedge Fund #####
@@ -283,29 +333,12 @@ if __name__ == "__main__":
     else:
         start_date = args.start_date
 
-    # Initialize portfolio with cash amount and stock positions
-    portfolio = {
-        "cash": args.initial_cash,  # Initial cash amount
-        "margin_requirement": args.margin_requirement,  # Initial margin requirement
-        "margin_used": 0.0,  # total margin usage across all short positions
-        "positions": {
-            ticker: {
-                "long": 0,  # Number of shares held long
-                "short": 0,  # Number of shares held short
-                "long_cost_basis": 0.0,  # Average cost basis for long positions
-                "short_cost_basis": 0.0,  # Average price at which shares were sold short
-                "short_margin_used": 0.0,  # Dollars of margin used for this ticker's short
-            }
-            for ticker in tickers
-        },
-        "realized_gains": {
-            ticker: {
-                "long": 0.0,  # Realized gains from long positions
-                "short": 0.0,  # Realized gains from short positions
-            }
-            for ticker in tickers
-        },
-    }
+    # Load existing portfolio or create a new one
+    portfolio = load_portfolio(
+        tickers,
+        initial_cash=args.initial_cash,
+        margin_requirement=args.margin_requirement,
+    )
 
     # Run the hedge fund
     result = run_hedge_fund(
@@ -318,4 +351,12 @@ if __name__ == "__main__":
         model_name=model_name,
         model_provider=model_provider,
     )
+
+    # Persist updated portfolio if returned by the workflow
+    updated_portfolio = None
+    if result.get("decisions") and isinstance(result["decisions"], dict):
+        updated_portfolio = result["decisions"].get("portfolio")
+
+    save_portfolio(updated_portfolio or portfolio)
+
     print_trading_output(result)
